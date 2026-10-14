@@ -53,14 +53,12 @@ steps. PDFs are saved to `orders/<order id>.pdf`. Type `quit` or press Ctrl+C to
 Claude (`claude-opus-5-5`) runs a tool-use loop in `agent.py`. It decides which tool to call
 next. The tools are:
 
-| Tool | What it does |
-|---|---|
-| `list_items` | Returns the catalog with unit prices |
-| `create_order` | Builds a draft order from catalog item keys and quantities |
-| `request_approval` | Prints the order and asks you `y` or `n` in the terminal |
-| `checkout_and_pay` | Fake payment; returns a payment ID |
-| `schedule_delivery` | Fake delivery booking, two days out |
-| `generate_order_pdf` | Writes the order PDF |
+- `list_items` returns the catalog with unit prices
+- `create_order` builds a draft order from catalog item keys and quantities
+- `request_approval` prints the order and asks you `y` or `n` in the terminal
+- `checkout_and_pay` takes a fake payment and returns a payment ID
+- `schedule_delivery` books a fake delivery two days out
+- `generate_order_pdf` writes the order PDF
 
 Claude does the matching. It reads the catalog and maps requests like "some coffee" to item
 keys. Python code calculates prices and totals, so the model cannot make them up.

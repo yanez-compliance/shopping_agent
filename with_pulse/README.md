@@ -27,11 +27,12 @@ The build request is in [prompt.md](prompt.md). Payment and delivery are still f
 
 There are three roles in this demo, all in one process:
 
-| Role | Code | Can it pay? |
-|---|---|---|
-| Agent (Claude plus the tool loop) | `agent.py` | No. It can only ask for approval and carry the receipt. |
-| Pulse client, the agent's side | `approval.py` | No. It sends the terms and waits for the decision. |
-| Merchant checkout (the "relying party") | `merchant.py` | Yes, but only after the receipt passes every check. |
+- **The agent** (Claude plus the tool loop, in `agent.py`) can't pay. It can only ask for
+  approval and carry the receipt.
+- **The Pulse client**, the agent's side (`approval.py`), can't pay. It sends the terms and
+  waits for the decision.
+- **The merchant checkout**, called the "relying party" because it relies on the receipt
+  (`merchant.py`), can pay, but only after the receipt passes every check.
 
 At checkout, `merchant.py` calls the SDK's `authorize_action`, which:
 
@@ -54,7 +55,8 @@ You need Python 3.11 or newer, a Claude API key, and the YID app on your phone.
 In the YID app:
 
 1. Find your YID under **Settings**.
-2. Create an agent key. It starts with `yak_`. The key can only ask for approval, not act.
+2. Create an agent key. It starts with `yak_`. According to the Pulse docs, the key can only
+   ask for approval, not approve or act.
 
 Then:
 
@@ -67,14 +69,12 @@ cp .env.example .env
 
 Fill in `.env`:
 
-| Setting | What to put |
-|---|---|
-| `ANTHROPIC_API_KEY` | Your Claude API key |
-| `ANTHROPIC_WORKSPACE_ID` | Only if your Claude key is not scoped to a workspace |
-| `YANEZ_AGENT_API_KEY` | The `yak_` agent key from the YID app |
-| `YANEZ_BASE_URL` | `https://ptest.yanez.ai` for Test, `https://yid.yanez.ai` for Production |
-| `YANEZ_EXPECTED_ISSUER` | The receipt issuer. Today it is the same as the base URL. |
-| `YANEZ_EXPECTED_YID` | Your YID. Checkout accepts approvals only from it. |
+- `ANTHROPIC_API_KEY`: your Claude API key
+- `ANTHROPIC_WORKSPACE_ID`: only if your Claude key is not scoped to a workspace
+- `YANEZ_AGENT_API_KEY`: the `yak_` agent key from the YID app
+- `YANEZ_BASE_URL`: `https://ptest.yanez.ai` for Test, `https://yid.yanez.ai` for Production
+- `YANEZ_EXPECTED_ISSUER`: the receipt issuer. Today it is the same as the base URL.
+- `YANEZ_EXPECTED_YID`: your YID. Checkout accepts approvals only from it.
 
 Use the YID app build that matches the environment you picked.
 

@@ -269,3 +269,7 @@ YID app. Then run it again and reject an order.
 Orders live in memory and are lost when the agent exits. A real merchant would store
 orders, and the token it uses to mark a receipt as used, in a database before checkout,
 so it can recover safely after a crash.
+
+## License
+
+MIT. See [LICENSE](LICENSE).
