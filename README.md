@@ -1,38 +1,118 @@
-# Shopping agent demo
+# Human approval for AI agents: a Yanez Pulse example
 
-This project shows one AI shopping agent built twice:
+This repository is a worked example of how to add **human approval** to an AI agent with
+**[Yanez Pulse](https://docs.yanez.ai/pulse/)**, so the agent can't carry out a sensitive
+action until a real person has approved it.
 
-1. **`initial/`**: the agent asks you to approve each order with `y` or `n` in the terminal.
-2. **`with_pulse/`**: the same agent asks you to approve in the **YID app** on your phone,
-   using **Yanez Pulse**. The merchant then checks a signed receipt of your approval
-   before it takes payment.
+The sensitive action here is paying for a grocery order. The same pattern fits any action
+you wouldn't want an agent to take on its own, such as a payment, a transfer or a change
+to someone's account.
 
-Comparing the two shows what changes when a human approval becomes something a merchant
-can verify, rather than something it has to take on trust.
+The example is a small shopping agent built twice, so you can compare the two:
 
-Both versions sell the same eight sample groceries. Payment and delivery are fake: no
-card is charged and nothing ships.
+1. **`initial/`**: the agent asks you to approve each order by typing `y` or `n` in the
+   terminal. This is the starting point.
+2. **`with_pulse/`**: the same agent sends the order to the **YID app** on your phone
+   through Pulse. You approve it there, and the merchant checks a signed receipt of
+   your approval before it takes payment.
 
-## Part 1: the initial shopping agent
+Both versions sell the same eight sample groceries. Payment and delivery are simulated:
+no card is charged and nothing ships.
 
-### What it does
+## Why a "yes" in the chat isn't enough
 
-You chat with the agent in the terminal. It understands two kinds of request:
+In the initial version, approval is a `y` typed into the same program the agent runs in.
+The business that carries out the action (here, the merchant) has nothing it can check:
 
-- **"What can I buy?"** It lists the catalog with unit prices.
-- **"Buy 2 milk and a roast chicken."** It matches your words to catalog items and builds
-  an order. Then it shows you the order and asks you to approve it.
-  - If you approve, it checks out, takes a fake payment, schedules a fake delivery, and
-    saves the order as a PDF in `initial/orders/`.
-  - If you reject, it cancels the order and waits for your next request.
+- Anyone at the keyboard can type `y`.
+- An agent that is buggy, or that has been manipulated by a malicious prompt, can skip
+  the question or report a false answer.
+- Nothing proves which order was approved, so a changed basket looks the same as the
+  approved one.
+- Nothing stops one approval from being used twice.
+- Afterwards, there is no evidence of who approved what, and when.
 
-The agent is Claude (model `claude-opus-5-5`), with six tools it can call: list items,
-create order, request approval, check out and pay, schedule delivery, and generate the
-PDF. Python code works out every price and total, so the model can't invent amounts.
-The order rules are also in code: an order can't be paid until you have approved it,
-whatever the model decides.
+Pulse turns the approval into proof the merchant can verify for itself, instead of a
+claim it has to take on trust.
 
-### Configuration
+## What Pulse adds
+
+- **Approval on the person's own device.** The order appears in the YID app on your
+  phone, and you approve or reject it with a face scan. YID is your Yanez identity.
+- **Exact terms.** The app shows the order the merchant will charge for: the items, the
+  total, the delivery address and the order ID.
+- **A receipt signed twice.** Approving produces a receipt signed by Yanez and also by
+  your own key on your phone. The merchant checks both signatures, so it doesn't have to
+  trust the agent or rely on Yanez alone.
+- **The right person.** The receipt names the approver's YID, and the merchant accepts
+  approvals only from the YID in its settings.
+- **Scan strength.** The receipt records an assurance tier (`low`, `medium` or `high`)
+  that says how strong the face scan was. This merchant requires at least `medium`.
+- **Single use.** At checkout the merchant marks the receipt as used ("consumes" it) with
+  Yanez, so one approval can't pay twice.
+- **Freshness.** The merchant refuses approvals older than 15 minutes.
+- **A limited agent key.** According to the Pulse docs, the agent's `yak_` key can only
+  ask for approval. It can't approve or act.
+- **A record.** The order PDF shows who approved, the approval request ID, when they
+  approved and the assurance tier.
+
+## How the integration works
+
+The example has three roles. They run in one process here, but each lives in its own
+file, as they would be separate services in a real system:
+
+- **The agent** (`agent.py`, with Claude) builds the order and asks for approval. It has
+  no way to pay.
+- **The approval request** (`approval.py`) sends the order to the YID app and waits for
+  the decision. The receipt it gets back never goes to Claude, the logs or the PDF,
+  because anyone holding a receipt could try to spend it.
+- **The merchant checkout** (`merchant.py`) is the only code that can take payment. In
+  Pulse terms it is the "relying party": the service that relies on the receipt before it
+  acts. It rebuilds the expected terms from its own order record, verifies the receipt
+  against them, and pays only when every check passes.
+
+An approved purchase goes through these steps:
+
+1. Claude matches your request to the catalog and creates a draft order.
+2. The agent turns the order into Pulse "terms" (the exact details you will see in the
+   app) and sends them with the `yak_` key. It then waits up to 5 minutes.
+3. You approve in the YID app. Pulse returns a signed receipt to the agent.
+4. The agent asks the merchant to check out. The merchant verifies and consumes the
+   receipt, then takes the simulated payment.
+5. The agent schedules the simulated delivery and writes the order PDF.
+
+If you reject, or nobody answers in time, the order is cancelled and nothing is paid.
+
+## Using the pattern in your own agent
+
+These are the pieces to copy. Each one points to where this example does it.
+
+1. **Describe the action as terms.** Build the terms from your own record of the action,
+   not from text the model wrote. See `order_terms` in `with_pulse/orders.py`.
+2. **Ask for approval with an agent key.** Send the terms with `AuthorizationClient`
+   from the Pulse SDK and wait for the decision. See `with_pulse/approval.py`. Load the
+   `yak_` key from configuration, never from the model.
+3. **Keep the receipt away from the model.** Store it with your record of the action and
+   pass only the decision back to the model. See `_request_approval` in
+   `with_pulse/agent.py`.
+4. **Verify where the action happens.** The service that carries out the action calls
+   `ReceiptVerifier.authorize_action` with terms rebuilt from its own record, the
+   expected approver, a minimum assurance tier, a maximum age, and `consume=True`. See
+   `with_pulse/merchant.py`.
+5. **Refuse on any failure.** Treat every verification error as "do not act". The one
+   exception is a receipt your own earlier attempt already consumed, where the merchant
+   finishes the payment that attempt started. See the error handling in
+   `with_pulse/merchant.py`.
+
+The Pulse SDK is the Python package `yanez-agent-authorization` (imported as
+`yanez_authz`).
+
+## Try it
+
+You need Python 3.11 or newer and a Claude API key. For the Pulse version you also need
+the YID app on your phone.
+
+### Part 1: the initial agent
 
 Create `initial/.env` with your Claude API key:
 
@@ -46,7 +126,7 @@ A Claude API key "scoped to a workspace" belongs to one workspace in the Claude 
 If yours isn't, the API asks for the workspace ID on every request. You can find the ID
 under Settings, then Workspaces, in the Claude Console.
 
-### Run
+Then run:
 
 ```zsh
 cd initial
@@ -55,9 +135,8 @@ python3 -m venv .venv
 .venv/bin/python agent.py
 ```
 
-Lines starting with `->` are the tools the agent calls. They are printed so you can
-follow each step. Claude's own replies (lines starting with `Agent:`) will be worded
-differently each time.
+Lines starting with `->` are the tools the agent calls, printed so you can follow each
+step. Claude's replies (lines starting with `Agent:`) are worded differently each time.
 
 ```text
 Yanez Mart shopping agent. Ask what is available, or tell me what to buy. Type 'quit' to exit.
@@ -87,72 +166,18 @@ Agent: Your order is placed. Total $14.97, delivery on Thursday, October 15 betw
 9:00 AM and 12:00 PM. Order PDF: initial/orders/ORD-86A07457.pdf
 ```
 
-If you answer `n`, the agent replies that the order is cancelled and waits for your next
+If you answer `n`, the agent tells you the order is cancelled and waits for your next
 request.
 
-### Test
+Claude (model `claude-opus-5-5`) decides which of six tools to call: list items, create
+order, request approval, check out and pay, schedule delivery, and generate the PDF.
+Python code works out every price and total, so the model can't invent amounts. The order
+rules are in code too: an order can't be paid until it has been approved, whatever the
+model decides.
 
-```zsh
-.venv/bin/python -m pytest
-```
+### Part 2: the agent with Pulse
 
-The tests use a scripted stand-in for Claude, so they need no API key.
-
-## Part 2: the shopping agent with Yanez Pulse
-
-### Why use Pulse
-
-In the initial version, approval is a `y` typed into the same program the agent runs in.
-That works for a demo, but the merchant has nothing to check:
-
-- Anyone at the keyboard can type `y`.
-- An agent that is buggy or has been manipulated can skip the question or report a
-  false answer, and the merchant has no way to know.
-- Nothing proves which basket was approved, so a changed basket looks the same as the
-  approved one.
-- Nothing stops one approval from being used twice.
-- After the fact, there is no evidence of who approved what and when.
-
-**Yanez Pulse** lets an AI agent ask a real person to approve an exact action, and gives
-the business that carries out the action (here, the merchant) proof it can check itself.
-
-### What Pulse provides
-
-- **Approval on the person's own device.** The order appears in the YID app on your
-  phone. You approve or reject behind a fresh face scan.
-- **Exact terms.** The app shows the same order the merchant will charge for: the items,
-  the total, the delivery address and the order ID.
-- **A receipt signed twice.** An approval produces a receipt signed by Yanez and also by
-  your own key on your device. The merchant checks both signatures, so it doesn't have to
-  trust the agent or take Yanez's word alone.
-- **A tie to the right person.** The receipt names the approver's YID (their Yanez
-  identity). The merchant accepts approvals only from the YID set in its configuration.
-- **Scan strength.** The receipt records an assurance tier (`low`, `medium` or `high`),
-  which says how strong the face scan was. This merchant requires at least `medium`.
-- **Single use.** At checkout the merchant marks the receipt as used with Yanez, so the
-  same approval can't pay twice.
-- **Freshness.** The merchant refuses approvals older than 15 minutes.
-- **A limited agent key.** According to the Pulse docs, the agent's `yak_` key can only
-  ask for approval, not approve or act.
-- **A record.** The order PDF shows who approved, the approval request ID, when they
-  approved, and the assurance tier.
-
-### How the parts fit together
-
-All three roles run in one process for the workshop, but each lives in its own file:
-
-- **The agent** (`agent.py`, with Claude) builds the order and asks for approval. It
-  never gets to pay.
-- **The Pulse request** (`approval.py`) sends the order to the YID app and waits for the
-  decision. The receipt it receives is kept away from Claude, the logs and the PDF,
-  because anyone holding a receipt could try to spend it.
-- **The merchant checkout** (`merchant.py`) is the only code that can take payment. It
-  rebuilds the expected terms from its own order record, verifies the receipt against
-  them, and pays only when every check passes.
-
-### Configuration
-
-Before you start, in the YID app:
+First, in the YID app:
 
 1. Find your YID under **Settings**.
 2. Create an agent key. It starts with `yak_`.
@@ -176,15 +201,15 @@ YANEZ_EXPECTED_ISSUER=https://ptest.yanez.ai
 YANEZ_EXPECTED_YID=<your YID>
 ```
 
-- `YANEZ_BASE_URL` is where approval requests go. Use `https://ptest.yanez.ai` for Test
-  or `https://yid.yanez.ai` for Production.
+- `YANEZ_BASE_URL` is where approval requests go: `https://ptest.yanez.ai` for Test or
+  `https://yid.yanez.ai` for Production.
 - `YANEZ_EXPECTED_ISSUER` is the issuer every receipt must name. Today it is the same as
   the base URL.
 - `YANEZ_EXPECTED_YID` is the only YID whose approvals checkout accepts.
 
 The agent stops at startup and names any setting that is missing.
 
-### Run
+Then run:
 
 ```zsh
 python3 -m venv .venv
@@ -192,8 +217,8 @@ python3 -m venv .venv
 .venv/bin/python agent.py
 ```
 
-The Pulse SDK is a pre-release, hence `--pre`. In the session below, the order appears
-in the terminal and in the YID app at the same time:
+The Pulse SDK is a pre-release, hence `--pre`. In this session the order appears in the
+terminal and in the YID app at the same time:
 
 ```text
 Yanez Mart shopping agent. Ask what is available, or tell me what to buy. Type 'quit' to exit.
@@ -235,7 +260,7 @@ Not approved (rejected).
 Agent: Your order ORD-86A07457 has been cancelled. What would you like to do next?
 ```
 
-If the approval doesn't pass the merchant's checks, for example because the face scan
+If the approval fails one of the merchant's checks, for example because the face scan
 only reached the `low` tier, checkout refuses to pay:
 
 ```text
@@ -246,29 +271,39 @@ Agent: Checkout refused the approval: it was low assurance and this store requir
 medium. The order was not paid. You can place it again and approve with a fresh scan.
 ```
 
-### Test
+## Tests
+
+Run the tests in either folder:
 
 ```zsh
 .venv/bin/python -m pytest
 ```
 
-The tests run offline. A stand-in for Yanez creates receipts with real signatures, so
-the real Pulse verifier runs unchanged. The tests cover:
+Both test suites run offline and need no API keys. The initial version uses a scripted
+stand-in for Claude. The Pulse version also uses a stand-in for Yanez that creates
+receipts with real signatures, so the real Pulse verifier runs unchanged. Its tests
+cover:
 
-- approve, reject, expire and no-answer
-- checks that must stop payment: approval from a different YID, a receipt signed by an
-  unknown key, an approval older than 15 minutes, a scan below `medium`, a basket edited
-  after approval, a receipt already used, and an attempt to pay with no approval
+- approve, reject, expire and no answer
+- checks that must stop payment: an approval from a different YID, a receipt signed by
+  an unknown key, an approval older than 15 minutes, a scan below `medium`, a basket
+  changed after approval, a receipt already used, and an attempt to pay with no approval
 - the receipt never being sent to Claude
 
-To try it end to end, run the agent with your real settings and approve one order in the
-YID app. Then run it again and reject an order.
+To try it end to end, run the Pulse agent with your real settings and approve one order
+in the YID app. Then run it again and reject an order.
 
-### Demo limits
+## Limits of this example
 
-Orders live in memory and are lost when the agent exits. A real merchant would store
-orders, and the token it uses to mark a receipt as used, in a database before checkout,
-so it can recover safely after a crash.
+Orders live in memory and are lost when the agent exits. A real merchant would save the
+order, and the token it uses to consume the receipt, in a database before checkout, so it
+can recover safely after a crash.
+
+## Learn more
+
+- Yanez Pulse documentation: https://docs.yanez.ai/pulse/
+- More detail on each version: [initial/README.md](initial/README.md) and
+  [with_pulse/README.md](with_pulse/README.md)
 
 ## License
 
