@@ -52,7 +52,15 @@ try to spend it.
 
 You need Python 3.11 or newer, a Claude API key, and the YID app on your phone.
 
-In the YID app:
+If you don't have a YID yet, get the YID app and register:
+
+1. Open https://pulse.yanez.ai on a computer and scan the QR code with your phone's camera.
+2. If the YID app isn't installed, install it from the
+   [App Store](https://apps.apple.com/app/yanezyid/id6784028862) (iPhone) or
+   [Google Play](https://play.google.com/store/apps/details?id=ai.yanez.yid) (Android).
+3. Scan the QR code again. This registers you with the Yanez YID registry.
+
+Then, in the YID app:
 
 1. Find your YID under **Settings**.
 2. Create an agent key. It starts with `yak_`. According to the Pulse docs, the key can only
