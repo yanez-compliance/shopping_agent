@@ -80,11 +80,9 @@ Fill in `.env`:
 - `ANTHROPIC_API_KEY`: your Claude API key
 - `ANTHROPIC_WORKSPACE_ID`: only if your Claude key is not scoped to a workspace
 - `YANEZ_AGENT_API_KEY`: the `yak_` agent key from the YID app
-- `YANEZ_BASE_URL`: `https://ptest.yanez.ai` for Test, `https://yid.yanez.ai` for Production
+- `YANEZ_BASE_URL`: `https://yid.yanez.ai`
 - `YANEZ_EXPECTED_ISSUER`: the receipt issuer. Today it is the same as the base URL.
 - `YANEZ_EXPECTED_YID`: your YID. Checkout accepts approvals only from it.
-
-Use the YID app build that matches the environment you picked.
 
 ## Run
 

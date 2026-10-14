@@ -190,8 +190,6 @@ Then, in the YID app:
 1. Find your YID under **Settings**.
 2. Create an agent key. It starts with `yak_`.
 
-Use the YID app build that matches the environment you point at: Test or Production.
-
 Copy the example settings file and fill it in:
 
 ```zsh
@@ -209,8 +207,7 @@ YANEZ_EXPECTED_ISSUER=https://yid.yanez.ai
 YANEZ_EXPECTED_YID=<your YID>
 ```
 
-- `YANEZ_BASE_URL` is where approval requests go: `https://ptest.yanez.ai` for Test or
-  `https://yid.yanez.ai` for Production.
+- `YANEZ_BASE_URL` is where approval requests go: `https://yid.yanez.ai`.
 - `YANEZ_EXPECTED_ISSUER` is the issuer every receipt must name. Today it is the same as
   the base URL.
 - `YANEZ_EXPECTED_YID` is the only YID whose approvals checkout accepts.

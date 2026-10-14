@@ -17,7 +17,7 @@ from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
 from py_ecc.bls.ciphersuites import G2Basic
 from yanez_authz import ENVELOPE_ACTION, ENVELOPE_VERSION, USER_SIG_ALG, ReceiptVerifier
 
-BASE_URL = ISSUER = "https://ptest.yanez.ai"
+BASE_URL = ISSUER = "https://yid.yanez.ai"
 CUSTOMER_YID = "0123456789abcdef0123456789abcdef"
 KID = "test-key-1"
 
