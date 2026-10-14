@@ -1,4 +1,4 @@
-# Shopping agent workshop
+# Shopping agent demo
 
 This project shows one AI shopping agent built twice:
 
