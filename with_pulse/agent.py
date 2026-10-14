@@ -234,7 +234,7 @@ def main() -> None:
     agent_key = _required("YANEZ_AGENT_API_KEY", "the yak_ agent key created in the YID app")
     if not agent_key.startswith("yak_"):
         sys.exit("YANEZ_AGENT_API_KEY must be a yak_ agent key created in the YID app.")
-    base_url = _required("YANEZ_BASE_URL", "for example https://ptest.yanez.ai")
+    base_url = _required("YANEZ_BASE_URL", "for example https://yid.yanez.ai")
     issuer = _required("YANEZ_EXPECTED_ISSUER", "the receipt issuer for that environment")
     expected_yid = _required("YANEZ_EXPECTED_YID", "your YID, shown in the YID app under Settings").lower()
 

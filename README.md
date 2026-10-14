@@ -204,8 +204,8 @@ ANTHROPIC_API_KEY=sk-ant-...
 ANTHROPIC_WORKSPACE_ID=            # only if your Claude key needs it
 
 YANEZ_AGENT_API_KEY=yak_...        # agent key from the YID app; keep it secret
-YANEZ_BASE_URL=https://ptest.yanez.ai
-YANEZ_EXPECTED_ISSUER=https://ptest.yanez.ai
+YANEZ_BASE_URL=https://yid.yanez.ai
+YANEZ_EXPECTED_ISSUER=https://yid.yanez.ai
 YANEZ_EXPECTED_YID=<your YID>
 ```
 
