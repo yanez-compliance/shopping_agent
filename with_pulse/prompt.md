@@ -1,0 +1,1 @@
+now I want you to build the version of the shopping agent using pulse. see the docs at https://docs.yanez.ai/pulse/. use pulse to request for human approval on the YID app. ask me questions if needed. create the new version in a new directory with_pulse, don't change the files in initial directory. save this prompt in the with_pulse/prompt.md

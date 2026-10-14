@@ -1,0 +1,16 @@
+# Secrets: real keys live only in each folder's .env
+.env
+.env.*
+!.env.example
+
+# Python
+.venv/
+__pycache__/
+.pytest_cache/
+*.pyc
+
+# Generated order PDFs
+orders/
+
+# macOS
+.DS_Store

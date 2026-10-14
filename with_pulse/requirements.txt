@@ -1,0 +1,5 @@
+anthropic>=1.13.0
+fpdf2>=2.8.0
+python-dotenv>=1.0.0
+yanez-agent-authorization==0.1.0b5
+pytest>=8.0
